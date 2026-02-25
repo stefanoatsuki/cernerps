@@ -809,6 +809,80 @@ def screen99_admin():
                 st.markdown(f"<div style='text-align:right; color:#8A8A8A;'>{c}/{t} ({pct}%)</div>", unsafe_allow_html=True)
 
     st.markdown("---")
+    st.markdown("#### Evaluator Detail View")
+
+    eval_options = ["Evaluator 1", "Evaluator 2", "Evaluator 3", "Evaluator 4", "Evaluator 5", "Evaluator 6"]
+    selected_ev = st.selectbox("Select evaluator to inspect:", eval_options, key="admin_ev_select")
+
+    if selected_ev:
+        ev_notes = get_evaluator_notes(selected_ev, df)
+        ev_group = EVALUATOR_GROUPS.get(selected_ev, "")
+        evaluations = load_evaluations()
+
+        st.markdown(f"**{selected_ev}** — Group {ev_group} — {len(ev_notes)} notes")
+
+        for idx, note in enumerate(ev_notes):
+            doc_id = note["document_id"]
+            key = f"{selected_ev}_{doc_id}"
+            ev_data = evaluations.get(key, {})
+            status = ev_data.get("status", "not_started")
+            ts = ev_data.get("timestamp", "")
+
+            if status == "completed":
+                dot_color = "#34C759"
+                label = "Completed"
+            elif status == "in_progress":
+                dot_color = "#F59E0B"
+                label = "In Progress"
+            else:
+                dot_color = "#4A4A4A"
+                label = "Not Started"
+
+            with st.expander(f"{idx+1}. Doc {doc_id} — {label}" + (f"  ({ts[:16]})" if ts else "")):
+                if status == "not_started":
+                    st.caption("No data yet.")
+                else:
+                    for m_num in ["1", "2", "3"]:
+                        m_eval = ev_data.get(f"model_{m_num}_eval", {})
+                        color = STEP_COLORS[int(m_num)]
+                        st.markdown(f"<div style='font-weight:700; color:{color}; margin:8px 0 4px 0;'>Model {m_num}</div>", unsafe_allow_html=True)
+
+                        c1, c2, c3, c4, c5 = st.columns(5)
+                        with c1:
+                            fab = m_eval.get("hallucination_fabrication", "—")
+                            st.markdown(f"**Fabrication**<br><span style='font-size:13px;'>{fab}</span>", unsafe_allow_html=True)
+                            if fab == "Yes hallucination":
+                                st.caption(m_eval.get("hallucination_fabrication_findings", "")[:80])
+                        with c2:
+                            inf = m_eval.get("hallucination_inference", "—")
+                            bd = m_eval.get("inference_breakdown", "")
+                            st.markdown(f"**Inference**<br><span style='font-size:13px;'>{inf}</span>", unsafe_allow_html=True)
+                            if inf == "Yes clinical inference":
+                                st.caption(f"{bd}")
+                        with c3:
+                            om = m_eval.get("pertinent_omission", "—")
+                            sev = m_eval.get("omission_severity", "")
+                            st.markdown(f"**Omission**<br><span style='font-size:13px;'>{om}</span>", unsafe_allow_html=True)
+                            if om == "Yes omission":
+                                st.caption(f"Severity: {sev}")
+                        with c4:
+                            ext = m_eval.get("extraneous_info", "—")
+                            esev = m_eval.get("extraneous_severity", "")
+                            st.markdown(f"**Extraneous**<br><span style='font-size:13px;'>{ext}</span>", unsafe_allow_html=True)
+                            if ext == "Yes extraneous information":
+                                st.caption(f"Severity: {esev}")
+                        with c5:
+                            fl = m_eval.get("flow", "—")
+                            st.markdown(f"**Flow**<br><span style='font-size:13px;'>{fl}</span>", unsafe_allow_html=True)
+
+                    st.markdown("<hr style='margin:8px 0; border-color:#3A3A3A;'>", unsafe_allow_html=True)
+                    pref = ev_data.get("preference", "—")
+                    pref_r = ev_data.get("preference_reasons", "")
+                    st.markdown(f"**Preference:** {pref}")
+                    if pref_r:
+                        st.caption(pref_r)
+
+    st.markdown("---")
     st.markdown("#### Export")
     if st.button("Export All Evaluations as CSV"):
         rows = export_all_evaluations()
