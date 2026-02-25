@@ -1,4 +1,4 @@
-var SEVERITY_SCORES = {"Critical": 0, "Significant": 0.33, "Minor": 0.67, "None": 1};
+var SEVERITY_SCORES = {"Critical": 1, "Significant": 0.67, "Minor": 0.33, "None": 0};
 
 var RAW_COLS = [
   "timestamp", "documentId", "noteType", "readerSpecialty", "evaluator", "group",
@@ -25,27 +25,27 @@ var SCORE_COLS = [
 
 function scoreModel(data, prefix) {
   var scores = [];
-  scores.push(data[prefix + "hall_fab"] === "No hallucination" ? 1 : 0);
+  scores.push(data[prefix + "hall_fab"] === "No hallucination" ? 0 : 1);
   if (data[prefix + "hall_inf"] === "No clinical inference") {
-    scores.push(1);
-  } else if (data[prefix + "inf_breakdown"] === "Unsafe, NON-Deducible Inference") {
     scores.push(0);
-  } else {
+  } else if (data[prefix + "inf_breakdown"] === "Unsafe, NON-Deducible Inference") {
     scores.push(1);
+  } else {
+    scores.push(0);
   }
   if (data[prefix + "omission"] === "No omission") {
-    scores.push(1);
+    scores.push(0);
   } else {
     var omSev = data[prefix + "omission_sev"] || "";
-    scores.push(SEVERITY_SCORES[omSev] !== undefined ? SEVERITY_SCORES[omSev] : 0);
+    scores.push(SEVERITY_SCORES[omSev] !== undefined ? SEVERITY_SCORES[omSev] : 1);
   }
   if (data[prefix + "extraneous"] === "No extraneous information") {
-    scores.push(1);
+    scores.push(0);
   } else {
     var exSev = data[prefix + "extraneous_sev"] || "";
-    scores.push(SEVERITY_SCORES[exSev] !== undefined ? SEVERITY_SCORES[exSev] : 0);
+    scores.push(SEVERITY_SCORES[exSev] !== undefined ? SEVERITY_SCORES[exSev] : 1);
   }
-  scores.push(data[prefix + "flow"] === "No flow issues" ? 1 : 0);
+  scores.push(data[prefix + "flow"] === "No flow issues" ? 0 : 1);
   return scores;
 }
 

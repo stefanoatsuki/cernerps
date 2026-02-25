@@ -209,40 +209,40 @@ def rebuild_from_submissions(submissions: list) -> int:
     return count
 
 
-SEVERITY_SCORES = {"Critical": 0, "Significant": 0.33, "Minor": 0.67, "None": 1}
+SEVERITY_SCORES = {"Critical": 1, "Significant": 0.67, "Minor": 0.33, "None": 0}
 
 
 def _score_model(m_eval: dict) -> dict:
     """Calculate numeric scores for one model's evaluation.
-    Good = 1, Bad = 0, Severity in thirds (Critical=0, Significant=0.33, Minor=0.67, None=1).
+    0 = no issue, 1 = worst issue. Severity in thirds (None=0, Minor=0.33, Significant=0.67, Critical=1).
     """
     scores = {}
 
-    # Fabrication: No = 1, Yes = 0
-    scores["fab_score"] = 1 if m_eval.get("hallucination_fabrication") == "No hallucination" else 0
+    # Fabrication: No = 0, Yes = 1
+    scores["fab_score"] = 0 if m_eval.get("hallucination_fabrication") == "No hallucination" else 1
 
-    # Inference: No = 1, Yes + Unsafe = 0, Yes + Safe = 1
+    # Inference: No = 0, Safe types = 0, Unsafe = 1
     if m_eval.get("hallucination_inference") == "No clinical inference":
-        scores["inf_score"] = 1
-    elif m_eval.get("inference_breakdown") == "Unsafe, NON-Deducible Inference":
         scores["inf_score"] = 0
-    else:
+    elif m_eval.get("inference_breakdown") == "Unsafe, NON-Deducible Inference":
         scores["inf_score"] = 1
+    else:
+        scores["inf_score"] = 0
 
-    # Omission: No = 1, Yes = severity-based
+    # Omission: No = 0, Yes = severity-based
     if m_eval.get("pertinent_omission") == "No omission":
-        scores["omission_score"] = 1
+        scores["omission_score"] = 0
     else:
-        scores["omission_score"] = SEVERITY_SCORES.get(m_eval.get("omission_severity", ""), 0)
+        scores["omission_score"] = SEVERITY_SCORES.get(m_eval.get("omission_severity", ""), 1)
 
-    # Extraneous: No = 1, Yes = severity-based
+    # Extraneous: No = 0, Yes = severity-based
     if m_eval.get("extraneous_info") == "No extraneous information":
-        scores["extraneous_score"] = 1
+        scores["extraneous_score"] = 0
     else:
-        scores["extraneous_score"] = SEVERITY_SCORES.get(m_eval.get("extraneous_severity", ""), 0)
+        scores["extraneous_score"] = SEVERITY_SCORES.get(m_eval.get("extraneous_severity", ""), 1)
 
-    # Flow: No = 1, Yes = 0
-    scores["flow_score"] = 1 if m_eval.get("flow") == "No flow issues" else 0
+    # Flow: No = 0, Yes = 1
+    scores["flow_score"] = 0 if m_eval.get("flow") == "No flow issues" else 1
 
     return scores
 
