@@ -22,7 +22,7 @@ if CSS_PATH.exists():
 
 # ───────────────────────── Constants ─────────────────────────────
 
-EVALUATOR_PASSWORDS = {
+EVALUATOR_PASSWORDS = dict(st.secrets.get("passwords", {
     "Evaluator 1": "PVS-eval-alpha-7291",
     "Evaluator 2": "PVS-eval-beta-4638",
     "Evaluator 3": "PVS-eval-gamma-8154",
@@ -30,9 +30,9 @@ EVALUATOR_PASSWORDS = {
     "Evaluator 5": "PVS-eval-epsilon-6482",
     "Evaluator 6": "PVS-eval-zeta-1795",
     "Tester": "PVS-test-preview-2025",
-}
-ADMIN_PASSWORD = "PVS-admin-dashboard-2025"
-GOOGLE_SHEETS_URL = "https://script.google.com/a/macros/suki.ai/s/AKfycbwDPc2jKXjcEShcI5uqs7IN9XqPBs-7w9s5FCOE45RdKI0a3RxZXuApr2h1_ozW7tvI/exec"
+}))
+ADMIN_PASSWORD = st.secrets.get("admin_password", "PVS-admin-dashboard-2025")
+GOOGLE_SHEETS_URL = st.secrets.get("google_sheets_url", "")
 
 INF_BREAKDOWN_OPTIONS = [
     "Safe, Deducible Inference",
