@@ -465,6 +465,9 @@ def screen2_note_queue():
                 else:
                     dot_color = "#4A4A4A"
 
+                note_type = note.get("note_type", "")
+                specialty = note.get("reader_specialty", "")
+
                 c1, c2 = st.columns([4, 1])
                 with c1:
                     st.markdown(
@@ -472,6 +475,7 @@ def screen2_note_queue():
                         f"<span style='display:inline-block; width:10px; height:10px; border-radius:50%; background:{dot_color}; margin-right:12px; vertical-align:middle;'></span>"
                         f"<span style='color:#6A6A6A; margin-right:8px;'>{idx+1}.</span>"
                         f"<span style='font-weight:600;'>{doc_id}</span>"
+                        f"<br><span style='color:#8A8A8A; font-size:12px; margin-left:22px;'>{note_type} · {specialty}</span>"
                         f"</div>",
                         unsafe_allow_html=True,
                     )
