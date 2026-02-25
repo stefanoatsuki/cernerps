@@ -1,0 +1,5 @@
+evaluations.json
+assignments.json
+__pycache__/
+*.pyc
+.DS_Store
