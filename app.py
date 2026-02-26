@@ -46,46 +46,65 @@ PREFERENCE_OPTIONS = ["Model 1", "Model 2", "Model 3"]
 STEP_LABELS = {1: "Model 1", 2: "Model 2", 3: "Model 3", 4: "Preference"}
 STEP_COLORS = {1: "#3B82F6", 2: "#8B5CF6", 3: "#10B981", 4: "#F59E0B"}
 
-INSTRUCTIONS_DOC_URL = "https://docs.google.com/document/d/1_pQP5FPWJ5QsKPwqBIBTYDr1R4FynkGcYCTpYPSw5vw/edit?usp=sharing"
+INSTRUCTIONS_DOC_URL = "https://docs.google.com/document/d/1oQl2lRxotZh6Kr_4V7938gjV30AboODXIhtzXGWQplQ/edit?usp=sharing"
 
 INSTRUCTIONS_MD = """
 **For each note you will:**
-1. Open the original clinical note (PDF link provided)
+1. Open the original clinical note (link provided)
 2. Score each of the 3 model summaries on 5 metrics
 3. Pick your preferred model and explain why
 
 ---
 
+**What the AI Was Asked to Do**
+
+The AI was given a single clinical note and asked to produce an ultra-concise, action-oriented summary (30-40 words) for a provider who already knows the patient. The summary must answer: *Why was the patient seen, what was assessed, and what was done?*
+
+**Metric Boundaries** — these are mutually exclusive:
+- Factually unsupported = **Hallucination**
+- Factually correct but unnecessary = **Extraneous**
+- Missing something clinically important = **Omission**
+- Accurate and complete but poorly expressed = **Flow**
+
+---
+
 **Metric 1 — Hallucination (Fabrication)**
-Is there information in the summary that is **completely invented** — not found anywhere in the source note?
+Does the summary contain any fact that has **zero support** in the source note?
 - *If Yes:* copy/paste the fabricated text
 
 **Metric 2 — Hallucination (Inference)**
-Does the summary contain information **logically derived but not explicitly stated** in the source?
-- *If Yes:* select the inference type:
-  - **Safe, Deducible** — logically certain (e.g. "Amoxicillin" → "antibiotics") = PASS
-  - **Unsafe, NON-Deducible** — harmful leap without evidence = FAIL
-  - **Safe, NON-Deducible** — minor interpretation, no clinical impact = PASS
+Does the summary contain information with **some support** but **not explicitly stated** — i.e., the AI synthesized or extrapolated?
+- *If Yes:* classify using the decision guide:
+  - **Safe, Deducible** — logically certain (e.g. "Amoxicillin" → "antibiotics")
+  - **Safe, NON-Deducible** — minor interpretation, no clinical impact (e.g. linking decreased appetite to Concerta)
+  - **Unsafe, NON-Deducible** — harmful leap: false linkage (assuming causation), false certainty (upgrading clinical certainty beyond what the physician documented)
 - *If Yes:* copy/paste the inferred text + context
 
 **Metric 3 — Pertinent Omission (Recall)**
-Is **key clinical information missing** that would affect a reader's understanding?
-- *If Yes:* describe what's missing and select severity:
-  - **Critical** — dangerously incomplete picture
-  - **Significant** — would change reader's next action
+Does the summary omit anything across the three dimensions (reason for encounter, assessment, plan) that a clinician would need?
+- *If Yes:* describe what's missing, why it matters, and select severity:
+  - **Critical** — creates a false or dangerously incomplete picture; reader could act without realizing something essential is missing
+  - **Significant** — would change or inform the reader's next action
   - **Minor** — missed but reader can still act appropriately
-- *NOT omissions:* med dosages, PE findings (unless they drove the plan), follow-up dates, stable background conditions
+  - **None** — no pertinent omission
+- **Never count as omissions:** medication dosages/durations, PE findings (unless they directly drove the plan), follow-up dates, stable background conditions
 
 **Metric 4 — Extraneous Information (Precision)**
-Does the summary include **accurate but unnecessary** information?
-- *If Yes:* classify as Rule violation / Low-value / Profile bleed, and select severity:
-  - **Critical** — obscures the clinical core
-  - **Significant** — distracts but understandable with effort
-  - **Minor** — present but reader still gets complete picture
+Does the summary contain excluded items or clinically irrelevant information?
+- *If Yes:* classify the type:
+  - **Rule violation** — something the AI was told to exclude (dates, dosages, provider names, image descriptions)
+  - **Low-value / not actionable** — present in note but doesn't help understand the encounter
+  - **Profile bleed** — drawn from patient background, not relevant to this visit
+- *If Yes:* select severity:
+  - **Critical** — obscures the clinical core, leaving reader with incomplete/distorted understanding
+  - **Significant** — distracts from clinical narrative, hard to identify main takeaway
+  - **Minor** — present but reader still walks away with complete understanding
+  - **None** — no extraneous information
 
 **Metric 5 — Flow & Format (Coherence)**
-Is content **accurate but poorly expressed?** (bad grouping, confusing syntax, poor progression, redundancy)
-- Only flag if the content itself is correct. Factual errors = Hallucination, not Flow.
+Is the content accurate but **poorly expressed or organized?**
+- Poor grouping, confusing syntax, poor progression (should follow encounter → assessment → plan), redundancy, ambiguous modifiers, not specialty-appropriate
+- **Only flag if content is correct.** Factual errors = Hallucination, not Flow.
 
 ---
 
