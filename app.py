@@ -49,66 +49,186 @@ STEP_COLORS = {1: "#3B82F6", 2: "#8B5CF6", 3: "#10B981", 4: "#F59E0B"}
 INSTRUCTIONS_DOC_URL = "https://docs.google.com/document/d/1oQl2lRxotZh6Kr_4V7938gjV30AboODXIhtzXGWQplQ/edit?usp=sharing"
 
 INSTRUCTIONS_MD = """
-**For each note you will:**
-1. Open the original clinical note (link provided)
-2. Score each of the 3 model summaries on 5 metrics
-3. Pick your preferred model and explain why
+## Patient Summary Evaluation Framework
+
+### Purpose
+This document is the official guide to labeling for the Patient Summary evaluation framework. Its purpose is to ensure every evaluator applies the metrics in a consistent, objective, and robust manner.
+
+### Background
+You will receive an evaluation file where each row represents a single AI-generated patient summary that requires evaluation.
+
+Each row will contain:
+- **Document ID:** Unique ID for each evaluation item.
+- **Google Drive Link to the Source Note:** The Google Drive link to the patient's clinical note. Please note, this process is safe and has been approved by security.
+- **Note Type Class:** The classification of the source note (e.g., Office/Clinic Note, Progress Note, Discharge Summary, ED Note, H&P, Operative Report, Consult Note).
+- **Reader Specialty:** The specialty of the intended reader of the summary.
+- **Model Output:** The AI-generated summary you must evaluate.
+
+### What the AI Was Asked to Do
+The AI was given a single clinical note and instructed to produce an ultra-concise, action-oriented summary of that visit for a provider who already knows the patient's baseline. The summary must:
+- Be strictly 30 to 40 words, written as a single natural-language paragraph.
+- Answer: Why was the patient seen, what was assessed, and what was done?
+- Focus on changes and actions, connected in a brief clinical narrative.
+- Be tailored to the reader's specialty.
+
+The AI was explicitly told to **include:**
+- Visit context / reason for encounter (chief complaint, reason for admission, reason for consult, procedure indication — depending on note type).
+- Formal assessments and diagnoses from the Assessment & Plan section.
+- Key diagnostic or intraoperative results.
+- New or changed medications.
+- Significant orders (labs, imaging, referrals) or procedures performed, and their purpose.
+- Explicit follow-up instructions.
+- The critical context that explains the plan (a key finding, precipitating event, etc.).
+
+The AI was explicitly told to **exclude:**
+- Patient name or age.
+- Provider name.
+- Dates or specific times.
+- Medication dosages or durations.
+- Filler phrases (e.g., "new assessments included").
+- Unchanged or stable conditions and medications (unless highly relevant for context).
+- Geographical locations.
+- Disclaimers.
+- Descriptions or interpretations of embedded images, graphs, or scans.
+- Physical exam findings unless they directly drove the plan.
+
+### Step-by-Step Instructions
+1. Open the Source Note. This is the single clinical note the AI was asked to summarize. This is your source of truth for the entire evaluation.
+2. Note the Note Type Class and Reader Specialty. These affect what the summary should prioritize.
+3. Read the Model Output. Compare it against the source note.
+4. Apply each metric below in order. For each metric, read the definition, answer the question, and provide evidence if an error is found.
+
+### A Note on Metric Boundaries
+Before applying any metric, keep these boundaries in mind:
+- If the summary includes information that is factually unsupported by the source note, that is a **Hallucination**.
+- If the summary includes information that is factually correct but unnecessary, that is **Extraneous**.
+- If the summary is missing something clinically important, that is a **Pertinent Omission**.
+- If the summary is accurate and complete but poorly expressed, that is a **Flow & Format** issue.
+
+**These are mutually exclusive. Do not apply more than one metric to the same piece of information.**
 
 ---
 
-**What the AI Was Asked to Do**
+### 1. Hallucination — Complete Fabrication
+**Definition:** Information in the summary that is not found anywhere in the source note. It appears to be completely invented.
 
-The AI was given a single clinical note and asked to produce an ultra-concise, action-oriented summary (30-40 words) for a provider who already knows the patient. The summary must answer: *Why was the patient seen, what was assessed, and what was done?*
+**Example:** The source note discusses diabetes and hypertension. The AI summary states "history of seizures." A review of the entire source note shows no mention of seizures, epilepsy, or anticonvulsants. This is a complete fabrication.
 
-**Metric Boundaries** — these are mutually exclusive:
-- Factually unsupported = **Hallucination**
-- Factually correct but unnecessary = **Extraneous**
-- Missing something clinically important = **Omission**
-- Accurate and complete but poorly expressed = **Flow**
+**Question:** Does this summary contain any fact that has zero support in the source note?
+- No hallucination
+- Yes, hallucination found
 
----
-
-**Metric 1 — Hallucination (Fabrication)**
-Does the summary contain any fact that has **zero support** in the source note?
-- *If Yes:* copy/paste the fabricated text
-
-**Metric 2 — Hallucination (Inference)**
-Does the summary contain information with **some support** but **not explicitly stated** — i.e., the AI synthesized or extrapolated?
-- *If Yes:* classify using the decision guide:
-  - **Safe, Deducible** — logically certain (e.g. "Amoxicillin" → "antibiotics")
-  - **Safe, NON-Deducible** — minor interpretation, no clinical impact (e.g. linking decreased appetite to Concerta)
-  - **Unsafe, NON-Deducible** — harmful leap: false linkage (assuming causation), false certainty (upgrading clinical certainty beyond what the physician documented)
-- *If Yes:* copy/paste the inferred text + context
-
-**Metric 3 — Pertinent Omission (Recall)**
-Does the summary omit anything across the three dimensions (reason for encounter, assessment, plan) that a clinician would need?
-- *If Yes:* describe what's missing, why it matters, and select severity:
-  - **Critical** — creates a false or dangerously incomplete picture; reader could act without realizing something essential is missing
-  - **Significant** — would change or inform the reader's next action
-  - **Minor** — missed but reader can still act appropriately
-  - **None** — no pertinent omission
-- **Never count as omissions:** medication dosages/durations, PE findings (unless they directly drove the plan), follow-up dates, stable background conditions
-
-**Metric 4 — Extraneous Information (Precision)**
-Does the summary contain excluded items or clinically irrelevant information?
-- *If Yes:* classify the type:
-  - **Rule violation** — something the AI was told to exclude (dates, dosages, provider names, image descriptions)
-  - **Low-value / not actionable** — present in note but doesn't help understand the encounter
-  - **Profile bleed** — drawn from patient background, not relevant to this visit
-- *If Yes:* select severity:
-  - **Critical** — obscures the clinical core, leaving reader with incomplete/distorted understanding
-  - **Significant** — distracts from clinical narrative, hard to identify main takeaway
-  - **Minor** — present but reader still walks away with complete understanding
-  - **None** — no extraneous information
-
-**Metric 5 — Flow & Format (Coherence)**
-Is the content accurate but **poorly expressed or organized?**
-- Poor grouping, confusing syntax, poor progression (should follow encounter → assessment → plan), redundancy, ambiguous modifiers, not specialty-appropriate
-- **Only flag if content is correct.** Factual errors = Hallucination, not Flow.
+*If Yes, copy/paste the fabricated information.*
 
 ---
 
-**Overall Preference**
+### 2. Hallucination — Inference
+**Definition:** A clinical inference is information that has SOME support in the source note but is not explicitly stated. The AI synthesized or extrapolated beyond what was written. You must determine if the inference is Safe or Unsafe.
+
+**Question:** Does the summary contain any information that is a clinical inference or synthesis not explicitly stated in the source note?
+- No clinical inference
+- Yes, clinical inference found
+
+*If Yes, classify using the decision guide:*
+
+**a) Is this inference logically deducible with certainty?**
+- Yes → **Safe, Deducible Inference.** The AI combined facts to reach a 100% certain conclusion.
+  - *Example:* Source note says "Rx: Amoxicillin." Summary says "prescribed antibiotics." Amoxicillin is an antibiotic — this is certain.
+  - *Example:* Source note documents a PHQ-9 score of 17 and a referral for anxiety counseling. Summary says "referred for depression/anxiety counseling." Given the PHQ-9 score, this is a safe and reasonable synthesis.
+
+**b) If No, does this non-deducible inference have the potential to negatively impact clinical care?**
+- Yes → **Unsafe, Non-Deducible Inference.** The AI made a harmful logical leap without supporting evidence.
+  - *Example (False Linkage):* Source note says "Chest Pain" in one section and "Anxiety" in another. Summary says "chest pain caused by anxiety." Unless the note explicitly links them, assuming causation is unsafe.
+  - *Example (False Certainty):* MRI report says "consistent with a small neoplasm." The treating physician documented "possible neoplasm." Summary says "neoplasm confirmed." Upgrading clinical certainty beyond what the physician documented is unsafe.
+- No → **Safe, Non-Deducible Inference.** The AI made a minor interpretation or synonym substitution with no clinical impact.
+  - *Example:* Source note documents decreased appetite and Concerta use. Summary says "decreased appetite on Concerta." The association is reasonable and carries no clinical risk.
+
+*Copy/paste the inference and provide context.*
+
+---
+
+### 3. Pertinent Omission (Recall)
+**Definition:** The AI summary fails to include something from the source note that a clinician would need to know to fully understand what happened at this encounter.
+
+Because the summary is strictly 30-40 words, not everything can fit. This metric is not about what could have been included — it is about whether something essential was left out given the word budget.
+
+**What Should NEVER Be Counted as an Omission:**
+- Medication dosages or durations. The AI was explicitly instructed to exclude these.
+- Physical exam findings unless they directly and explicitly drove the plan.
+- Follow-up dates. The fact that follow-up is planned is sufficient.
+- Stable background conditions. A patient's chronic conditions are only relevant if they directly explain something in this specific encounter.
+
+**Step 1 — Binary Judgment**
+Every valid summary should allow the reader to answer three questions:
+- **Reason for encounter:** Why did this encounter, procedure, or consult take place?
+- **Assessment:** What was determined clinically?
+- **Plan:** What was decided or done as a result?
+
+Does the summary omit anything across these three dimensions that a clinician would need to know to fully understand what happened at this encounter?
+- No → Stop.
+- Yes → Continue to Step 2.
+
+**Step 2 — Describe the Omission**
+Write a brief description of what was omitted and why it matters clinically.
+
+*Example: "Summary omitted that the patient was instructed to stop amoxicillin. Without this, the reader does not have a complete picture of the medication plan."*
+
+**Step 3 — Classify Omission Severity**
+
+| Label | Definition |
+|-------|------------|
+| **Critical** | The summary creates a false or dangerously incomplete picture of the encounter. The reader could act on it without realizing something essential is missing. |
+| **Significant** | The missing information would change or inform the reader's next action — a decision they make, something they follow up on, or how they prepare for the next visit. The summary is incomplete but not actively misleading. |
+| **Minor** | Something real was missed but the reader can still act appropriately without it. It adds context but doesn't change what they do next. |
+| **None** | No pertinent omission. |
+
+---
+
+### 4. Extraneous Information (Precision)
+**Definition:** The AI includes information that either (a) violates the explicit exclusion rules, or (b) is factually present in the source note but is clinically irrelevant given the summary's purpose and the 30-40 word constraint.
+
+**Extraneous Classification — if you mark extraneous information, label which type:**
+- **Rule violation:** violates the explicit "exclude" list (e.g., a date, a medication dosage, a provider name, descriptions or interpretations of embedded images, graphs, or scans).
+- **Low-value / not actionable:** supported by the note but does not help a provider understand the reason for encounter, assessment, or plan — and it displaced more important content.
+- **Profile bleed:** information drawn from the patient's background conditions or history that was not relevant to or discussed in this specific encounter. *Example: The patient profile lists anxiety as a background condition. The summary mentions anxiety, but it was not discussed or addressed at this visit.*
+
+**Question:** Does the summary contain excluded items or clinically irrelevant information?
+- No extraneous information
+- Yes, extraneous information found
+
+*If Yes, describe what is extraneous and why.*
+
+**Classify Extraneous Information Severity:**
+
+| Label | Definition |
+|-------|------------|
+| **Critical** | Obscures the clinical core, leaving the reader with an incomplete or distorted understanding of the encounter. |
+| **Significant** | Distracts from the clinical narrative, making it difficult to identify the main takeaway, though a clinician could still arrive at a complete understanding with effort. |
+| **Minor** | Present but a clinician would still walk away with a complete and accurate understanding of the encounter. |
+| **None** | No extraneous information. |
+
+---
+
+### 5. Flow & Format (Coherence)
+**Definition:** This metric evaluates whether the summary meets the structural and stylistic requirements and reads as a clear clinical narrative.
+
+**Important boundary:** Flow & Format evaluates how information is communicated — structure, syntax, progression, and clarity. If the summary contains information that is factually wrong or misattributed, that is a Hallucination issue, not a flow issue. Only flag something here if the content is accurate but poorly expressed or organized.
+
+**Question:** Does the summary have any narrative flow issues?
+- No flow or format issues
+- Yes, issues found
+
+*If Yes, describe the issue(s). Examples of what to look for:*
+- **Poor grouping:** Related clinical concepts are split apart.
+- **Confusing syntax:** Sentence structure is hard to follow.
+- **Poor progression:** The narrative doesn't follow the logical flow of reason for encounter → assessment → plan.
+- **Redundancy:** The same information is stated more than once.
+- **Ambiguous grouping:** Modifiers or qualifiers are attached to the wrong clinical concept.
+- **Not specialty-appropriate:** Terminology or emphasis does not match the reader's specialty.
+
+---
+
+### Overall Preference
 Which model's summary would be **most useful to a clinician?** Pick one and explain why.
 """
 
